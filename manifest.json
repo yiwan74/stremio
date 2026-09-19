@@ -1,0 +1,16 @@
+{
+  "id": "io.github.yiwan74.subtitles",
+  "version": "1.0.0",
+  "name": "JIMTPER Subtitles",
+  "description": "Serves custom subtitles from a static GitHub page.",
+  "resources": [
+    "subtitles"
+  ],
+  "types": [
+    "movie"
+  ],
+  "catalogs": [],
+  "idPrefixes": [
+    "tt"
+  ]
+}
