@@ -9,12 +9,16 @@ export default {
     if (url.pathname === "/manifest.json" || url.pathname === "/") {
       return json({
         id: "com.stremio.jimtpersubtitles",
-        version: "3.2.0",
+        version: "3.4.0",
         name: "JIMTPER Subtitles",
         description: "Fully automated GitHub subtitle addon",
         types: ["movie"],
         idPrefixes: ["tt"],
-        resources: ["subtitles"],
+        resources: [{
+          name: "subtitles",
+          types: ["movie"],
+          idPrefixes: ["tt"]
+        }],
         catalogs: []
       });
     }
@@ -37,22 +41,24 @@ export default {
         const files = await ghResponse.json();
 
         const subtitlesList = files
-          .filter(file => file.name.endsWith(".srt"))
+          .filter(file => file.type === "file" && file.name.toLowerCase().endsWith(".srt"))
           .map((file, index) => {
             const cleanName = file.name.replace(".srt", "");
-            const parts = cleanName.split("-");
-            
-            // Zadržavamo pravi jezični kod (npr. "srp")
-            const langCode = parts[1] || "srp"; 
-            const descriptiveLabel = cleanName.replace(`${imdbId}-`, "").replace(/-/g, " ");
+            const languageMatch = cleanName.match(/(?:^|-)(eng|srp|hrv|bos|slv)(?:-|$)/i);
+            const langCode = languageMatch ? languageMatch[1].toLowerCase() : "und";
+            const variantName = cleanName
+              .replace(new RegExp(`^${imdbId}-`), "")
+              .replace(new RegExp(`-${langCode}(?=-|$)`, "i"), "")
+              .replace(/-/g, " ") || "DEFAULT";
 
             return {
               id: `${imdbId}-${index}-${cleanName}`,
-              url: `${url.origin}/proxy-srt/${imdbId}/${file.name}`,
-              lang: langCode, // Svi dobivaju svoj pravi kod (npr. "srp")
-              label: descriptiveLabel
+              url: `${url.origin}/proxy-srt/${imdbId}/${encodeURIComponent(file.name)}`,
+              lang: langCode,
+              label: `[${langCode.toUpperCase()}] ${variantName.toUpperCase()}`
             };
-          });
+          })
+          .sort((left, right) => left.lang.localeCompare(right.lang) || left.label.localeCompare(right.label));
 
         return json({ subtitles: subtitlesList });
       } catch (err) {
@@ -64,7 +70,7 @@ export default {
     if (url.pathname.startsWith("/proxy-srt/")) {
       const parts = url.pathname.split("/");
       const imdbId = parts[2];
-      const fileName = parts[3];
+      const fileName = decodeURIComponent(parts.slice(3).join("/"));
 
       const githubSrtUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/subtitles/movie/${imdbId}/${fileName}`;
 
