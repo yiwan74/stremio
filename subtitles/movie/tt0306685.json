@@ -2,9 +2,9 @@
   "subtitles": [
     {
       "id": "cradle-srp-1",
-      "url": "https://raw.githubusercontent.com/yiwan74/stremio/main/subtitles/movie/tt0306685/cradle2thegrave-srp.srt",
+      "url": "https://yiwan74.github.io/stremio/subtitles/movie/tt0306685/cradle2thegrave-srp.srt",
       "lang": "srp",
-      "name": "Cradle 2 the Grave (2003) - Serbian"
+      "label": "Serbian - Cradle 2 the Grave (2003)"
     }
   ]
 }
