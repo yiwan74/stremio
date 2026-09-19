@@ -9,7 +9,7 @@ export default {
     if (url.pathname === "/manifest.json" || url.pathname === "/") {
       return json({
         id: "com.stremio.jimtpersubtitles",
-        version: "3.0.0",
+        version: "3.2.0",
         name: "JIMTPER Subtitles",
         description: "Fully automated GitHub subtitle addon",
         types: ["movie"],
@@ -19,41 +19,38 @@ export default {
       });
     }
 
-    // 2. Handle Subtitles Request from Stremio (e.g., /subtitles/movie/tt0306685.json)
+    // 2. Handle Subtitles Request from Stremio
     const match = url.pathname.match(/^\/subtitles\/movie\/(tt\d+)\.json$/);
     if (match) {
       const imdbId = match[1];
 
       try {
-        // Query GitHub's API to see what files exist in the movie folder
         const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/subtitles/movie/${imdbId}`;
         const ghResponse = await fetch(apiUrl, {
-          headers: { "User-Agent": "Cloudflare-Worker" } // GitHub API requires a User-Agent header
+          headers: { "User-Agent": "Cloudflare-Worker" }
         });
 
         if (!ghResponse.ok) {
-          return json({ subtitles: [] }); // No folder found yet for this movie
+          return json({ subtitles: [] });
         }
 
         const files = await ghResponse.json();
 
-        // Filter only .srt files and build the Stremio subtitle list dynamically
         const subtitlesList = files
           .filter(file => file.name.endsWith(".srt"))
           .map((file, index) => {
-            // Extract language code or build a clean label from the filename
-            // e.g., "tt0306685-srp-titlovi-2.srt" -> extracts "srp"
-            const parts = file.name.replace(".srt", "").split("-");
-            const langCode = parts[1] || "eng"; 
+            const cleanName = file.name.replace(".srt", "");
+            const parts = cleanName.split("-");
             
-            // Turn the filename into a readable label (e.g., "srp-titlovi-2")
-            const descriptiveLabel = parts.slice(2).join(" ") || file.name;
+            // Zadržavamo pravi jezični kod (npr. "srp")
+            const langCode = parts[1] || "srp"; 
+            const descriptiveLabel = cleanName.replace(`${imdbId}-`, "").replace(/-/g, " ");
 
             return {
-              id: `${imdbId}-${index}`,
+              id: `${imdbId}-${index}-${cleanName}`,
               url: `${url.origin}/proxy-srt/${imdbId}/${file.name}`,
-              lang: langCode,
-              label: `[${langCode.toUpperCase }] ${descriptiveLabel}`
+              lang: langCode, // Svi dobivaju svoj pravi kod (npr. "srp")
+              label: descriptiveLabel
             };
           });
 
